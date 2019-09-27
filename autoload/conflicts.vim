@@ -1,26 +1,13 @@
-if !exists('&conflicts#grep_cmd')
-    let conflicts#grep_cmd='rg --no-heading --line-number'
-endif
-
-if !exists('&conflicts#grep_cmd_fname_extract_fn')
-    function conflicts#grep_cmd_fname_extract_fn(line)
-        return split(a:line, ':')[0]
-    endfunction
-endif
-
-if !exists('&conflicts#grep_cmd_lnum_extract_fn')
-    function conflicts#grep_cmd_lnum_extract_fn(line)
-        return split(a:line, ':')[1]
-    endfunction
-endif
-
 function! conflicts#PopulateConflicts()
-    let lines=split(system(g:conflicts#grep_cmd.' "<<<<<<< HEAD"'), '\n')
+    let lines=split(system('git --no-pager diff --no-color --check --relative'), '\n')
     call setqflist([])
 
     for line in lines
-        let fname=conflicts#grep_cmd_fname_extract_fn(line)
-        let lnum=conflicts#grep_cmd_lnum_extract_fn(line)
+        let fname=split(line, ':')[0]
+        let lnum=split(line, ':')[1]
+        if split(system('head -n'.lnum.' '.fname.' | tail -n1'))[0] != '<<<<<<<'
+            continue
+        endif
 
         exec 'badd +'.lnum.' '.fname
         let bufnr=bufnr(fname)
